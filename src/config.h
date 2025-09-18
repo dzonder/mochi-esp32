@@ -27,5 +27,6 @@
 #define MAX_ANIMATION_FRAMES 20
 
 // --- Touch Sensor Configuration ---
-#define TOUCH_DEBOUNCE_MS 2000 // 2 seconds
+#define TOUCH_TIMEOUT_MS (3 * 60 * 1000) // 3 minutes
+#define TOUCH_DEBOUNCE_MS 200 // 200 milliseconds
 #define TOUCH_TARGET_URL "http://host.wokwi.internal:5000/touch"

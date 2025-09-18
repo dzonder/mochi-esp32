@@ -25,8 +25,10 @@ HTTPClient http;
 
 TaskHandle_t animationTaskHandle = nullptr;
 TaskHandle_t soundTaskHandle = nullptr;
+TaskHandle_t wakingUpAnimationTaskHandle = nullptr;
 
 volatile bool touchDetected = false;
+volatile bool touchRequestInProgress = false;
 
 unsigned long lastTouchTime = 0;
 
@@ -243,6 +245,69 @@ cleanup:
 }
 
 /**
+ * @brief Task to display a "waking up" indicator (Z's) on the OLED screen.
+ *        This task will run for a maximum of 3 minutes and then terminate itself.
+ * @param pvParameters Not used.
+ */
+void wakingUpAnimationTask(void *pvParameters)
+{
+    unsigned long startTime = millis();
+
+    const int num_steps = 3;
+    int current_step = 0;
+
+    // Base position for the smallest 'z'
+    const int base_x = 118;
+    const int base_y = 18;
+
+    while (millis() - startTime < TOUCH_TIMEOUT_MS)
+    {
+        // Clear the area for the animation
+        display.fillRect(118, 0, 10, 25, SSD1306_BLACK);
+
+        int x, y;
+
+        switch (current_step)
+        {
+        case 0: // Smallest Z (5x5)
+            x = base_x;
+            y = base_y;
+            display.drawLine(x, y, x + 4, y, SSD1306_WHITE);
+            display.drawLine(x + 4, y, x, y + 4, SSD1306_WHITE);
+            display.drawLine(x, y + 4, x + 4, y + 4, SSD1306_WHITE);
+            break;
+        case 1: // Medium Z (6x6)
+            x = base_x + 1;
+            y = base_y - 7;
+            display.drawLine(x, y, x + 5, y, SSD1306_WHITE);
+            display.drawLine(x + 5, y, x, y + 5, SSD1306_WHITE);
+            display.drawLine(x, y + 5, x + 5, y + 5, SSD1306_WHITE);
+            break;
+        case 2: // Largest Z (7x7)
+            x = base_x + 2;
+            y = base_y - 14;
+            display.drawLine(x, y, x + 6, y, SSD1306_WHITE);
+            display.drawLine(x + 6, y, x, y + 6, SSD1306_WHITE);
+            display.drawLine(x, y + 6, x + 6, y + 6, SSD1306_WHITE);
+            break;
+        }
+
+        display.display();
+
+        current_step = (current_step + 1) % num_steps;
+        vTaskDelay(pdMS_TO_TICKS(300 + (current_step == 0 ? 200 : 0)));
+    }
+
+    // Final clear of the area when task finishes
+    display.fillRect(118, 0, 10, 25, SSD1306_BLACK);
+    display.display();
+
+    wakingUpAnimationTaskHandle = nullptr;
+    touchRequestInProgress = false;
+    vTaskDelete(nullptr); // Task deletes itself
+}
+
+/**
  * @brief Stops an existing task if it's running and starts a new one.
  * @param taskCode Pointer to the function to be executed by the task.
  * @param taskName A descriptive name for the task.
@@ -287,6 +352,17 @@ void startTask(TaskFunction_t taskCode, const char *taskName, uint32_t stackSize
  */
 void handleTaskRequest(AsyncWebServerRequest *request, const char *paramName, TaskFunction_t taskCode, const char *taskName, uint32_t stackSize, UBaseType_t priority, TaskHandle_t *taskHandle)
 {
+    // Stop the waking up animation if it's running
+    if (wakingUpAnimationTaskHandle != nullptr)
+    {
+        vTaskDelete(wakingUpAnimationTaskHandle);
+        wakingUpAnimationTaskHandle = nullptr;
+        touchRequestInProgress = false;
+        // Clear the 'Z' area after stopping the task
+        display.fillRect(85, 0, 25, 30, SSD1306_BLACK);
+        display.display();
+    }
+
     if (request->hasParam(paramName, true))
     {
         String *data = new String(request->getParam(paramName, true)->value());
@@ -325,23 +401,24 @@ void setupWebServer()
  */
 void sendTouchRequest()
 {
+    touchRequestInProgress = true;
+    // Start the waking up animation
+    startTask(wakingUpAnimationTask, "Waking Up Animation", 2048, NULL, 1, &wakingUpAnimationTaskHandle);
     Serial.println("Touch detected! Sending GET request...");
 
     http.begin(TOUCH_TARGET_URL);
     int httpCode = http.GET();
-
-    if (httpCode > 0)
+    if (httpCode == HTTP_CODE_OK)
     {
-        Serial.printf("GET code: %d\r\n", httpCode);
-        if (httpCode == HTTP_CODE_OK)
-        {
-            String payload = http.getString();
-            Serial.println("Payload: " + payload);
-        }
+        String payload = http.getString();
+        Serial.println("Payload: " + payload);
     }
     else
     {
         Serial.printf("GET failed, error: %s\r\n", http.errorToString(httpCode).c_str());
+        vTaskDelete(wakingUpAnimationTaskHandle);
+        wakingUpAnimationTaskHandle = nullptr;
+        touchRequestInProgress = false;
     }
     http.end();
 }
@@ -377,12 +454,12 @@ void loop()
     // Check if the interrupt has been triggered
     if (touchDetected)
     {
-        if (millis() - lastTouchTime > TOUCH_DEBOUNCE_MS)
+        touchDetected = false; // Reset the flag
+        if (!touchRequestInProgress && (millis() - lastTouchTime > TOUCH_DEBOUNCE_MS))
         {
             lastTouchTime = millis();
             sendTouchRequest();
         }
-        touchDetected = false; // Reset the flag
     }
     // Async web server and FreeRTOS tasks run in the background.
 }
