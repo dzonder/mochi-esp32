@@ -1,0 +1,8 @@
+[wokwi]
+version = 1
+firmware = '.pio/build/esp32-c3-devkitm-1/firmware.bin'
+elf = '.pio/build/esp32-c3-devkitm-1/firmware.elf'
+gdbServerPort = 3334
+[[net.forward]]
+from = "localhost:5001"
+to = "target:5001"

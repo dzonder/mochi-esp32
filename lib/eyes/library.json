@@ -1,0 +1,14 @@
+{
+  "name": "eyes",
+  "version": "1.0.0",
+  "description": "A library for drawing eyes.",
+  "keywords": "drawing, eyes",
+  "authors": [
+    {
+      "name": "Michal Olech",
+      "email": "me@dzonder.net"
+    }
+  ],
+  "frameworks": "arduino",
+  "platforms": "espressif32"
+}

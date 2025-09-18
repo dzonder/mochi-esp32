@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "author": "Michal Olech",
+  "editor": "wokwi",
+  "parts": [
+    { "type": "board-esp32-c3-devkitm-1", "id": "esp", "top": 18.9, "left": 25.02, "attrs": {} },
+    {
+      "type": "board-ssd1306",
+      "id": "oled1",
+      "top": 166.34,
+      "left": 211.43,
+      "attrs": { "i2cAddress": "0x3c" }
+    },
+    { "type": "wokwi-buzzer", "id": "buzzer1", "top": 223.2, "left": 40.2, "attrs": {} },
+    {
+      "type": "wokwi-pushbutton",
+      "id": "touch1",
+      "top": 57.7,
+      "left": -70.5,
+      "rotate": 270,
+      "attrs": {}
+    }
+  ],
+  "connections": [
+    [ "touch1:1.l", "esp:1", "green", [ "v0" ] ],
+    [ "touch1:2.r", "esp:GND.1", "black", [ "v0" ] ],
+    [ "esp:3V3.1", "oled1:VCC", "red", [ "h-28.8", "v-57.6", "h230.4" ] ],
+    [ "esp:GND.10", "oled1:GND", "black", [ "h0" ] ],
+    [ "buzzer1:1", "esp:GND.5", "black", [ "v19.2", "h-86.4", "v-134.4" ] ],
+    [ "esp:6", "buzzer1:2", "red", [ "h35.98", "v211.2", "h-57.6" ] ],
+    [ "esp:8", "oled1:SDA", "blue", [ "h0" ] ],
+    [ "esp:9", "oled1:SCL", "green", [ "h0" ] ],
+    [ "esp:RX", "$serialMonitor:TX", "" ],
+    [ "esp:TX", "$serialMonitor:RX", "" ]
+  ],
+  "serialMonitor": {
+    "display": "auto",
+    "newline": "crlf",
+    "convertEol": false
+  },
+  "dependencies": {}
+}
