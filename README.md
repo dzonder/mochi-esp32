@@ -9,7 +9,7 @@ expressive robot eyes and quirky sounds to life, inspired by
 [Huy Vector's video](https://www.youtube.com/watch?v=HIvB4Zc_rUo).
 It optionally generates the emotions using GenAI (Gemini).
 
-> **Inspired by:** [Huy Vector - Make a Robot Face with AI](https://www.youtube.com/watch?v=HIvB4Zc_rUo)
+> **Inspired by:** [Huy Vector - Build Your Own Dasai Mochi Robot](https://www.youtube.com/watch?v=HIvB4Zc_rUo)
 
 ## Overview
 
